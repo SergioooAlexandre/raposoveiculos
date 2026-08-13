@@ -2,12 +2,30 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { SiteSettings } from '../types';
 import { mockSiteSettings } from '../data/mockVehicles';
 
-let runtimeSettings: SiteSettings = { ...mockSiteSettings };
+const SETTINGS_STORAGE_KEY = 'raposo_settings_local';
+
+const getLocalSettings = (): SiteSettings => {
+  const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored) as SiteSettings;
+    } catch (e) {
+      console.error('Erro ao carregar configurações locais:', e);
+    }
+  }
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(mockSiteSettings));
+  return mockSiteSettings;
+};
+
+const saveLocalSettings = (settings: SiteSettings): void => {
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  window.dispatchEvent(new Event('raposo_settings_updated'));
+};
 
 export const settingsService = {
   async getSettings(): Promise<SiteSettings> {
     if (!isSupabaseConfigured || !supabase) {
-      return runtimeSettings;
+      return getLocalSettings();
     }
 
     try {
@@ -18,24 +36,26 @@ export const settingsService = {
         .single();
 
       if (error || !data) {
-        return runtimeSettings;
+        return getLocalSettings();
       }
 
       return data;
     } catch (err) {
-      console.error('Erro ao buscar configurações do site:', err);
-      return runtimeSettings;
+      console.error('Erro ao buscar configurações do site no Supabase, fallback local:', err);
+      return getLocalSettings();
     }
   },
 
   async updateSettings(settings: Partial<SiteSettings>): Promise<SiteSettings> {
     if (!isSupabaseConfigured || !supabase) {
-      runtimeSettings = {
-        ...runtimeSettings,
+      const current = getLocalSettings();
+      const updated: SiteSettings = {
+        ...current,
         ...settings,
         updated_at: new Date().toISOString(),
       };
-      return runtimeSettings;
+      saveLocalSettings(updated);
+      return updated;
     }
 
     try {
@@ -62,6 +82,7 @@ export const settingsService = {
           .single();
 
         if (error) throw error;
+        window.dispatchEvent(new Event('raposo_settings_updated'));
         return data;
       } else {
         const { data, error } = await supabase
@@ -81,12 +102,15 @@ export const settingsService = {
           .single();
 
         if (error) throw error;
+        window.dispatchEvent(new Event('raposo_settings_updated'));
         return data;
       }
     } catch (err) {
-      console.error('Erro ao atualizar configurações:', err);
-      runtimeSettings = { ...runtimeSettings, ...settings };
-      return runtimeSettings;
+      console.error('Erro ao atualizar configurações no Supabase, atualizando localmente:', err);
+      const current = getLocalSettings();
+      const updated = { ...current, ...settings };
+      saveLocalSettings(updated);
+      return updated;
     }
   }
 };

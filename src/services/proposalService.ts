@@ -1,14 +1,16 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Proposal, ProposalStatus } from '../types';
 
-let runtimeMockProposals: Proposal[] = [
+const PROPOSALS_STORAGE_KEY = 'raposo_proposals_local';
+
+const initialMockProposals: Proposal[] = [
   {
     id: 'prop-1',
     vehicle_id: '1a91e1d0-1b2c-4e3f-9876-000000000001',
     vehicle_title: 'BMW 320i M Sport 2024',
     name: 'Carlos Henrique Silva',
-    phone: '(11) 99123-4567',
-    whatsapp: '11991234567',
+    phone: '(79) 99847-6431',
+    whatsapp: '5579998476431',
     email: 'carlos.silva@empresa.com.br',
     proposal_value: 320000,
     down_payment: 100000,
@@ -22,8 +24,8 @@ let runtimeMockProposals: Proposal[] = [
     vehicle_id: '4d91e1d0-1b2c-4e3f-9876-000000000004',
     vehicle_title: 'Jeep Compass Blackhawk Hurricane 2024',
     name: 'Fernanda Guimarães',
-    phone: '(11) 98765-4321',
-    whatsapp: '11987654321',
+    phone: '(79) 99847-6431',
+    whatsapp: '5579998476431',
     email: 'fernanda.g@gmail.com',
     proposal_value: 265000,
     down_payment: 80000,
@@ -34,10 +36,27 @@ let runtimeMockProposals: Proposal[] = [
   }
 ];
 
+const getLocalProposals = (): Proposal[] => {
+  const stored = localStorage.getItem(PROPOSALS_STORAGE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored) as Proposal[];
+    } catch (e) {
+      console.error('Erro ao ler propostas do localStorage:', e);
+    }
+  }
+  localStorage.setItem(PROPOSALS_STORAGE_KEY, JSON.stringify(initialMockProposals));
+  return initialMockProposals;
+};
+
+const saveLocalProposals = (proposals: Proposal[]): void => {
+  localStorage.setItem(PROPOSALS_STORAGE_KEY, JSON.stringify(proposals));
+};
+
 export const proposalService = {
   async getProposals(): Promise<Proposal[]> {
     if (!isSupabaseConfigured || !supabase) {
-      return [...runtimeMockProposals];
+      return getLocalProposals();
     }
 
     try {
@@ -56,8 +75,8 @@ export const proposalService = {
         vehicle_title: p.vehicles ? `${p.vehicles.brand} ${p.vehicles.model} ${p.vehicles.year}` : 'Veículo',
       }));
     } catch (err) {
-      console.error('Erro ao buscar propostas:', err);
-      return runtimeMockProposals;
+      console.error('Erro ao buscar propostas no Supabase, fallback local:', err);
+      return getLocalProposals();
     }
   },
 
@@ -65,11 +84,13 @@ export const proposalService = {
     if (!isSupabaseConfigured || !supabase) {
       const newProp: Proposal = {
         ...data,
-        id: 'mock-prop-' + Date.now(),
+        id: 'prop-' + Date.now(),
         status: 'NOVA',
         created_at: new Date().toISOString(),
       };
-      runtimeMockProposals = [newProp, ...runtimeMockProposals];
+      const current = getLocalProposals();
+      const updated = [newProp, ...current];
+      saveLocalProposals(updated);
       return newProp;
     }
 
@@ -96,9 +117,11 @@ export const proposalService = {
 
   async updateProposalStatus(id: string, status: ProposalStatus): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const prop = runtimeMockProposals.find(p => p.id === id);
+      const current = getLocalProposals();
+      const prop = current.find(p => p.id === id);
       if (prop) {
         prop.status = status;
+        saveLocalProposals(current);
         return true;
       }
       return false;
@@ -109,6 +132,18 @@ export const proposalService = {
       .update({ status })
       .eq('id', id);
 
+    return !error;
+  },
+
+  async deleteProposal(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) {
+      const current = getLocalProposals();
+      const filtered = current.filter(p => p.id !== id);
+      saveLocalProposals(filtered);
+      return true;
+    }
+
+    const { error } = await supabase.from('proposals').delete().eq('id', id);
     return !error;
   }
 };

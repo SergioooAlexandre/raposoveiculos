@@ -1,14 +1,16 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Lead, LeadStatus } from '../types';
 
-let runtimeMockLeads: Lead[] = [
+const LEADS_STORAGE_KEY = 'raposo_leads_local';
+
+const initialMockLeads: Lead[] = [
   {
     id: 'lead-1',
     vehicle_id: '2b91e1d0-1b2c-4e3f-9876-000000000002',
     vehicle_title: 'Porsche 911 Carrera S 2023',
     name: 'Mariana Costa',
-    phone: '(11) 98888-7777',
-    whatsapp: '11988887777',
+    phone: '(79) 99847-6431',
+    whatsapp: '5579998476431',
     email: 'mariana.costa@email.com',
     message: 'Olá! Tenho interesse no Porsche 911 Carrera S. O carro aceita troca em BMW M3 2022?',
     status: 'NOVO',
@@ -19,8 +21,8 @@ let runtimeMockLeads: Lead[] = [
     vehicle_id: null,
     vehicle_title: null,
     name: 'Roberto Alvarez',
-    phone: '(11) 97777-6666',
-    whatsapp: '11977776666',
+    phone: '(79) 99847-6431',
+    whatsapp: '5579998476431',
     email: 'roberto.alvarez@email.com',
     message: 'Gostaria de saber se vocês compram veículos seminovos à vista ou consignam.',
     status: 'EM_ATENDIMENTO',
@@ -28,10 +30,27 @@ let runtimeMockLeads: Lead[] = [
   }
 ];
 
+const getLocalLeads = (): Lead[] => {
+  const stored = localStorage.getItem(LEADS_STORAGE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored) as Lead[];
+    } catch (e) {
+      console.error('Erro ao ler leads do localStorage:', e);
+    }
+  }
+  localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(initialMockLeads));
+  return initialMockLeads;
+};
+
+const saveLocalLeads = (leads: Lead[]): void => {
+  localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
+};
+
 export const contactService = {
   async getLeads(): Promise<Lead[]> {
     if (!isSupabaseConfigured || !supabase) {
-      return [...runtimeMockLeads];
+      return getLocalLeads();
     }
 
     try {
@@ -50,8 +69,8 @@ export const contactService = {
         vehicle_title: item.vehicles ? `${item.vehicles.brand} ${item.vehicles.model} ${item.vehicles.year}` : null,
       }));
     } catch (err) {
-      console.error('Erro ao buscar leads:', err);
-      return runtimeMockLeads;
+      console.error('Erro ao buscar leads no Supabase, fallback local:', err);
+      return getLocalLeads();
     }
   },
 
@@ -59,11 +78,13 @@ export const contactService = {
     if (!isSupabaseConfigured || !supabase) {
       const newLead: Lead = {
         ...leadData,
-        id: 'mock-lead-' + Date.now(),
+        id: 'lead-' + Date.now(),
         status: 'NOVO',
         created_at: new Date().toISOString(),
       };
-      runtimeMockLeads = [newLead, ...runtimeMockLeads];
+      const current = getLocalLeads();
+      const updated = [newLead, ...current];
+      saveLocalLeads(updated);
       return newLead;
     }
 
@@ -87,9 +108,11 @@ export const contactService = {
 
   async updateLeadStatus(id: string, status: LeadStatus): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const lead = runtimeMockLeads.find(l => l.id === id);
+      const current = getLocalLeads();
+      const lead = current.find(l => l.id === id);
       if (lead) {
         lead.status = status;
+        saveLocalLeads(current);
         return true;
       }
       return false;
@@ -100,6 +123,18 @@ export const contactService = {
       .update({ status })
       .eq('id', id);
 
+    return !error;
+  },
+
+  async deleteLead(id: string): Promise<boolean> {
+    if (!isSupabaseConfigured || !supabase) {
+      const current = getLocalLeads();
+      const filtered = current.filter(l => l.id !== id);
+      saveLocalLeads(filtered);
+      return true;
+    }
+
+    const { error } = await supabase.from('leads').delete().eq('id', id);
     return !error;
   }
 };

@@ -20,6 +20,15 @@ export function useSiteSettings() {
 
   useEffect(() => {
     fetchSettings();
+
+    const handleSettingsUpdated = () => {
+      fetchSettings();
+    };
+
+    window.addEventListener('raposo_settings_updated', handleSettingsUpdated);
+    return () => {
+      window.removeEventListener('raposo_settings_updated', handleSettingsUpdated);
+    };
   }, []);
 
   return {

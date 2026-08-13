@@ -17,7 +17,7 @@ export interface DashboardStats {
 
 export const dashboardService = {
   async getStats(): Promise<DashboardStats> {
-    const vehicles = await vehicleService.getVehicles();
+    const vehicles = await vehicleService.getVehicles({ include_hidden: true });
     const proposals = await proposalService.getProposals();
     const leads = await contactService.getLeads();
 
