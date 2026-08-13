@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Outfit', system-ui, -apple-system, sans-serif;
+  
+  --color-raposo-black: #030303;
+  --color-raposo-dark: #070709;
+  --color-raposo-card: #0A0A0C;
+  --color-raposo-card-hover: #121216;
+  --color-raposo-border: #1F1F24;
+  --color-raposo-border-light: #2A2A32;
+  
+  --color-raposo-red: #E11D48;
+  --color-raposo-red-hover: #F43F5E;
+  --color-raposo-red-dark: #9F1239;
+  
+  --color-raposo-gold: #D4AF37;
+  --color-raposo-gold-light: #F3E5AB;
+  
+  --color-raposo-gray: #9CA3AF;
+  --color-raposo-gray-light: #E5E7EB;
+  --color-raposo-gray-dark: #4B5563;
+  
+  --shadow-red-glow: 0 0 25px rgba(225, 29, 72, 0.25);
+  --shadow-gold-glow: 0 0 20px rgba(212, 175, 55, 0.25);
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+}
+
+@utility glass-card {
+  background: rgba(10, 10, 12, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+@utility glass-card-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  &:hover {
+    border-color: rgba(225, 29, 72, 0.35);
+    box-shadow: 0 12px 30px -10px rgba(225, 29, 72, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+@utility glass-nav {
+  background: rgba(3, 3, 3, 0.9);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@utility text-gradient-silver {
+  background: linear-gradient(135deg, #FFFFFF 0%, #D1D5DB 50%, #9CA3AF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@utility text-gradient-red {
+  background: linear-gradient(135deg, #F43F5E 0%, #E11D48 60%, #BE123C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@utility text-gradient-gold {
+  background: linear-gradient(135deg, #FDE68A 0%, #D4AF37 60%, #B45309 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@layer base {
+  body {
+    background-color: #030303;
+    color: #F3F4F6;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #030303;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1F1F24;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #E11D48;
+  }
+}
