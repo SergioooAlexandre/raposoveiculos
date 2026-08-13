@@ -8,8 +8,10 @@ import { cleanPhoneForWhatsApp } from '../utils/formatters';
 export const Footer: React.FC = () => {
   const { settings } = useSiteSettings();
 
-  const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5511999999999');
+  const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');
   const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Olá! Vim pelo site da Raposo Veículos e gostaria de mais informações.')}`;
+  const instagramHandle = settings?.instagram || '@nexussitesbr';
+  const instagramUrl = `https://instagram.com/${instagramHandle.replace('@', '')}`;
 
   return (
     <footer className="bg-[#030303] border-t border-[#1F1F24] text-gray-400 text-sm mt-20">
@@ -73,7 +75,7 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center gap-2.5">
                 <Phone className="w-4 h-4 text-[#E11D48] shrink-0" />
-                <span>{settings?.phone || '(11) 3456-7890'}</span>
+                <span>{settings?.phone || '(79) 99847-6431'}</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <MessageCircle className="w-4 h-4 text-[#25D366] shrink-0" />
@@ -92,7 +94,14 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center gap-2.5">
                 <InstagramIcon className="w-4 h-4 text-[#E11D48] shrink-0" />
-                <span>{settings?.instagram || '@raposoveiculos'}</span>
+                <a
+                  href={instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-[#E11D48] transition-colors"
+                >
+                  {instagramHandle}
+                </a>
               </li>
             </ul>
           </div>

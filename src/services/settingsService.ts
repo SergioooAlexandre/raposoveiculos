@@ -68,10 +68,10 @@ export const settingsService = {
           .from('site_settings')
           .insert({
             store_name: settings.store_name || 'Raposo Veículos',
-            whatsapp: settings.whatsapp || '5511999999999',
-            phone: settings.phone || '(11) 3456-7890',
+            whatsapp: settings.whatsapp || '5579998476431',
+            phone: settings.phone || '(79) 99847-6431',
             email: settings.email || 'contato@raposoveiculos.com.br',
-            instagram: settings.instagram || '@raposoveiculos',
+            instagram: settings.instagram || '@nexussitesbr',
             address: settings.address || '',
             opening_hours: settings.opening_hours || '',
             seo_title: settings.seo_title || 'Raposo Veículos | Catálogo Digital Premium',

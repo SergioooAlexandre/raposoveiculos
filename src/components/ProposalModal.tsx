@@ -70,7 +70,7 @@ export const ProposalModal: React.FC<ProposalModalProps> = ({
   };
 
   const handleSendViaWhatsApp = () => {
-    const rawNumber = settings?.whatsapp || '5511999999999';
+    const rawNumber = settings?.whatsapp || '5579998476431';
     const cleanNumber = cleanPhoneForWhatsApp(rawNumber);
     const msg = `*PROPOSTA DE COMPRA - RAPOSO VEÍCULOS*
 Veículo: ${vehicle.brand} ${vehicle.model} ${vehicle.year}

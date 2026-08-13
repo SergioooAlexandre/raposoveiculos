@@ -60,7 +60,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   };
 
   const handleWhatsAppRedirect = () => {
-    const rawNumber = settings?.whatsapp || '5511999999999';
+    const rawNumber = settings?.whatsapp || '5579998476431';
     const cleanNumber = cleanPhoneForWhatsApp(rawNumber);
     const text = `Olá! Meu nome é ${name || 'Cliente'}. ${
       vehicleTitle ? `Estou interessado no veículo *${vehicleTitle}*.` : 'Gostaria de falar com um consultor.'

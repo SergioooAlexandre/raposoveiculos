@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
+import { MapPin, Mail, Clock, MessageCircle } from 'lucide-react';
 import { InstagramIcon } from '../components/Icons';
 import { ContactForm } from '../components/ContactForm';
 import { useSiteSettings } from '../hooks/useSiteSettings';
@@ -8,7 +8,7 @@ import { cleanPhoneForWhatsApp } from '../utils/formatters';
 export const Contact: React.FC = () => {
   const { settings } = useSiteSettings();
 
-  const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5511999999999');
+  const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');
   const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Olá! Vim pelo site da Raposo Veículos e gostaria de falar com um atendente.')}`;
 
   return (
@@ -49,19 +49,19 @@ export const Contact: React.FC = () => {
                   <MessageCircle className="w-5 h-5 fill-current" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-[#25D366] font-bold uppercase font-mono block">WhatsApp Direto</span>
-                  <span className="font-bold text-sm">{settings?.phone || '(11) 3456-7890'}</span>
+                  <h4 className="font-semibold text-white text-xs uppercase tracking-wider">Telefone Comercial</h4>
+                  <span className="font-bold text-sm">{settings?.phone || '(79) 99847-6431'}</span>
                 </div>
               </a>
 
-              {/* Phone */}
-              <div className="flex items-center gap-3.5 p-4 rounded-2xl bg-[#141418] border border-[#1F1F24]">
-                <div className="p-2.5 rounded-xl bg-[#E11D48]/10 text-[#E11D48]">
-                  <Phone className="w-5 h-5" />
+              {/* Card WhatsApp */}
+              <div className="bg-[#141418] border border-[#2A2A32] rounded-2xl p-5 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                  <MessageCircle className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-400 font-mono uppercase block">Telefone Fixo</span>
-                  <span className="font-bold text-white text-sm">{settings?.phone || '(11) 3456-7890'}</span>
+                  <h4 className="font-semibold text-white text-xs uppercase tracking-wider">WhatsApp Oficial</h4>
+                  <span className="font-bold text-white text-sm">{settings?.phone || '(79) 99847-6431'}</span>
                 </div>
               </div>
 

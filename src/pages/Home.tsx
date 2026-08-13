@@ -37,7 +37,7 @@ export const Home: React.FC = () => {
     loadFeatured();
   }, []);
 
-  const whatsappPhone = cleanPhoneForWhatsApp(settings?.whatsapp || '5511999999999');
+  const whatsappPhone = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');
   const consultantWhatsAppUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent('Olá! Gostaria de falar com um consultor da Raposo Veículos.')}`;
 
   const faqs = [

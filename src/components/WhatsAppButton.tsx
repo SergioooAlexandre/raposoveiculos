@@ -16,7 +16,7 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({ vehicleModel, cu
     : 'Olá! Vim pelo site da Raposo Veículos e gostaria de receber mais informações.';
 
   const finalMsg = customMessage || defaultMsg;
-  const rawPhone = settings?.whatsapp || '5511999999999';
+  const rawPhone = settings?.whatsapp || '5579998476431';
   const cleanPhone = cleanPhoneForWhatsApp(rawPhone);
   const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(finalMsg)}`;
 

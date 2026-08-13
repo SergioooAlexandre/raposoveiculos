@@ -34,7 +34,7 @@ export const Header: React.FC = () => {
     { name: 'Contato', path: '/contato' },
   ];
 
-  const whatsappPhone = cleanPhoneForWhatsApp(settings?.whatsapp || '5511999999999');
+  const whatsappPhone = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');
   const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent('Olá! Vim pelo site da Raposo Veículos e gostaria de atendimento.')}`;
 
   return (

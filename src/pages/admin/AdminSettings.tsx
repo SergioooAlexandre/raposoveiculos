@@ -32,10 +32,10 @@ export const AdminSettings: React.FC = () => {
       try {
         const data = await settingsService.getSettings();
         setStoreName(data.store_name || 'Raposo Veículos');
-        setWhatsapp(data.whatsapp || '5511999999999');
-        setPhone(data.phone || '(11) 3456-7890');
+        setWhatsapp(data.whatsapp || '5579998476431');
+        setPhone(data.phone || '(79) 99847-6431');
         setEmail(data.email || 'contato@raposoveiculos.com.br');
-        setInstagram(data.instagram || '@raposoveiculos');
+        setInstagram(data.instagram || '@nexussitesbr');
         setAddress(data.address || 'Rodovia Raposo Tavares, km 18 - São Paulo, SP');
         setOpeningHours(data.opening_hours || 'Segunda a Sexta: 08h às 19h | Sábado: 08h às 16h');
         setLogoUrl(data.logo_url || '');
@@ -155,10 +155,10 @@ export const AdminSettings: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="(11) 3456-7890"
+              placeholder="(79) 99847-6431"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-[#141418] border border-[#2A2A32] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-[#E11D48]"
+              className="w-full bg-[#141418] border border-[#2A2A32] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#E11D48]"
             />
           </div>
 

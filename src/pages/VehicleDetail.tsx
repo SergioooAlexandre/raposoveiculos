@@ -91,7 +91,7 @@ export const VehicleDetail: React.FC = () => {
   }
 
   const favorited = isFavorite(vehicle.id);
-  const rawNumber = settings?.whatsapp || '5511999999999';
+  const rawNumber = settings?.whatsapp || '5579998476431';
   const cleanNumber = cleanPhoneForWhatsApp(rawNumber);
   const vehicleWhatsAppUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
     `Olá! Tenho interesse no veículo *${vehicle.brand} ${vehicle.model} ${vehicle.version} (${vehicle.year})* que vi no site da Raposo Veículos. Gostaria de mais informações.`

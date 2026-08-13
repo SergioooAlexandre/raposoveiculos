@@ -7,7 +7,7 @@ import { cleanPhoneForWhatsApp } from '../utils/formatters';
 export const About: React.FC = () => {
   const { settings } = useSiteSettings();
 
-  const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5511999999999');
+  const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');
   const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Olá! Gostaria de conhecer melhor a Raposo Veículos.')}`;
 
   return (

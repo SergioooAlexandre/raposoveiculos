@@ -3,10 +3,10 @@ import type { Vehicle, SiteSettings } from '../types';
 export const mockSiteSettings: SiteSettings = {
   id: 'settings-1',
   store_name: 'Raposo Veículos',
-  whatsapp: '5511999999999',
-  phone: '(11) 3456-7890',
+  whatsapp: '5579998476431',
+  phone: '(79) 99847-6431',
   email: 'contato@raposoveiculos.com.br',
-  instagram: '@raposoveiculos',
+  instagram: '@nexussitesbr',
   address: 'Rodovia Raposo Tavares, km 18 - São Paulo, SP',
   opening_hours: 'Segunda a Sexta: 08h às 19h | Sábado: 08h às 16h',
   logo_url: '',
