@@ -45,7 +45,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
     }
   };
 
-  // Handle local video file upload
+  // Handle local video file upload (Drag & Drop or click selection)
   const handleVideoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -112,7 +112,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       
       {/* Header */}
       <div className="border-b border-[#1F1F24] pb-4">
-        <h3 className="text-lg font-bold font-heading text-white">Galeria de Fotos e Mídia</h3>
+        <h3 className="text-lg font-bold font-heading text-white">Galeria de Fotos do Veículo</h3>
         <p className="text-xs text-gray-400">
           Faça upload das fotos do veículo ou insira URLs de imagens de alta resolução.
         </p>
@@ -146,7 +146,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         </div>
       </div>
 
-      {/* Add Direct URL Form */}
+      {/* Add Direct URL Form for Images */}
       <div className="flex gap-2">
         <input
           type="url"
@@ -242,57 +242,64 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         </div>
       )}
 
-      {/* Dedicated Video Section */}
+      {/* Dedicated Video Upload Box Section */}
       <div className="pt-6 border-t border-[#1F1F24] space-y-4">
         <div>
-          <label className="block text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
-            <Video className="w-4 h-4 text-[#E11D48]" />
+          <h3 className="text-lg font-bold font-heading text-white flex items-center gap-2">
+            <Video className="w-5 h-5 text-[#E11D48]" />
             <span>Vídeo de Apresentação do Veículo</span>
-          </label>
-          <p className="text-[11px] text-gray-400 mt-1">
-            Insira o link de um vídeo do <strong>YouTube</strong>, <strong>YouTube Shorts</strong>, <strong>Vimeo</strong> ou faça upload direto de um arquivo <strong>.MP4</strong>.
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">
+            Faça upload do arquivo de vídeo ou insira o link do YouTube, YouTube Shorts ou Vimeo.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-          <div className="md:col-span-8 relative">
-            <input
-              type="url"
-              placeholder="Cole o link do vídeo: https://www.youtube.com/watch?v=... ou YouTube Shorts"
-              value={videoUrl}
-              onChange={(e) => onChangeVideoUrl(e.target.value)}
-              className="w-full bg-[#141418] border border-[#2A2A32] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#E11D48]"
-            />
-            {videoUrl && (
-              <button
-                type="button"
-                onClick={() => onChangeVideoUrl('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-rose-400 text-xs p-1"
-                title="Remover vídeo"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
+        {/* Big Drag & Drop Box for Video */}
+        <div className="border-2 border-dashed border-[#2A2A32] hover:border-[#E11D48]/50 rounded-2xl p-6 text-center transition-colors bg-[#141418]/50 relative group">
+          <input
+            type="file"
+            accept="video/*"
+            disabled={uploadingVideo}
+            onChange={handleVideoFile}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+          />
 
-          {/* Upload Local Video File */}
-          <div className="md:col-span-4 relative">
-            <label className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-white text-xs font-semibold border border-[#2A2A32] cursor-pointer transition-colors w-full">
+          <div className="space-y-3 pointer-events-none">
+            <div className="w-12 h-12 rounded-xl bg-[#E11D48]/10 text-[#E11D48] flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
               {uploadingVideo ? (
-                <Loader2 className="w-4 h-4 animate-spin text-[#E11D48]" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#E11D48]" />
               ) : (
-                <Upload className="w-4 h-4 text-[#E11D48]" />
+                <Video className="w-6 h-6 text-[#E11D48]" />
               )}
-              <span>{uploadingVideo ? 'Enviando Vídeo...' : 'Upload Arquivo MP4'}</span>
-              <input
-                type="file"
-                accept="video/*"
-                disabled={uploadingVideo}
-                onChange={handleVideoFile}
-                className="hidden"
-              />
-            </label>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-white">
+                {uploadingVideo ? 'Enviando arquivo de vídeo...' : 'Clique ou arraste o vídeo do veículo aqui'}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">Formatos MP4, WEBM ou MOV até 100MB</p>
+            </div>
           </div>
+        </div>
+
+        {/* Video Direct URL Input */}
+        <div className="relative">
+          <input
+            type="url"
+            placeholder="Ou cole a URL direta do vídeo (YouTube, YouTube Shorts, Vimeo ou link .mp4)"
+            value={videoUrl}
+            onChange={(e) => onChangeVideoUrl(e.target.value)}
+            className="w-full bg-[#141418] border border-[#2A2A32] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#E11D48]"
+          />
+          {videoUrl && (
+            <button
+              type="button"
+              onClick={() => onChangeVideoUrl('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-rose-400 text-xs p-1"
+              title="Remover vídeo"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Video Preview Status Box */}
