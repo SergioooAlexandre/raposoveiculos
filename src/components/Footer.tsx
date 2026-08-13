@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Car, MapPin, Phone, Mail, Clock, MessageCircle, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Car, MapPin, Phone, Mail, Clock, MessageCircle, ExternalLink, ShieldCheck, Lock } from 'lucide-react';
 import { InstagramIcon } from './Icons';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { cleanPhoneForWhatsApp } from '../utils/formatters';
@@ -61,6 +61,16 @@ export const Footer: React.FC = () => {
               </li>
               <li>
                 <Link to="/contato" className="hover:text-[#E11D48] transition-colors">Fale Conosco</Link>
+              </li>
+              <li className="pt-2 border-t border-[#1F1F24]/80">
+                <Link
+                  to="/admin"
+                  className="inline-flex items-center gap-1.5 text-gray-400 hover:text-[#E11D48] transition-colors font-medium"
+                  title="Acesso Restrito ao Painel Administrativo"
+                >
+                  <Lock className="w-3.5 h-3.5 text-[#E11D48]" />
+                  <span>Painel Administrativo</span>
+                </Link>
               </li>
             </ul>
           </div>
