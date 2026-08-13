@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Upload, X, Star, ArrowUp, ArrowDown, Video, Loader2 } from 'lucide-react';
+import { Upload, X, Star, ArrowUp, ArrowDown, Video, Loader2, Play, Check } from 'lucide-react';
 import { storageService } from '../services/storageService';
 import { useToast } from '../hooks/useToast';
+import { VideoModal } from './VideoModal';
 
 interface MediaUploaderProps {
   vehicleId: string;
@@ -20,9 +21,11 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
 }) => {
   const { showToast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [urlInput, setUrlInput] = useState('');
+  const [previewVideoModalOpen, setPreviewVideoModalOpen] = useState(false);
 
-  // Handle local file uploads
+  // Handle local image file uploads
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
@@ -39,6 +42,24 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
       showToast(err.message || 'Erro ao fazer upload das imagens.', 'error');
     } finally {
       setUploading(false);
+    }
+  };
+
+  // Handle local video file upload
+  const handleVideoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingVideo(true);
+    try {
+      const videoStorageUrl = await storageService.uploadVehicleImage(file, vehicleId || 'temp');
+      onChangeVideoUrl(videoStorageUrl);
+      showToast('Arquivo de vídeo carregado com sucesso!', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast(err.message || 'Erro ao fazer upload do arquivo de vídeo.', 'error');
+    } finally {
+      setUploadingVideo(false);
     }
   };
 
@@ -97,7 +118,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         </p>
       </div>
 
-      {/* Upload Drag & Drop Box */}
+      {/* Upload Drag & Drop Box for Images */}
       <div className="border-2 border-dashed border-[#2A2A32] hover:border-[#E11D48]/50 rounded-2xl p-6 text-center transition-colors bg-[#141418]/50 relative group">
         <input
           type="file"
@@ -221,20 +242,95 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({
         </div>
       )}
 
-      {/* Video URL Input */}
-      <div className="pt-4 border-t border-[#1F1F24] space-y-2">
-        <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
-          <Video className="w-4 h-4 text-[#E11D48]" />
-          <span>Vídeo do Veículo (YouTube / MP4 / Vimeo)</span>
-        </label>
-        <input
-          type="url"
-          placeholder="Ex: https://www.youtube.com/watch?v=... ou link direto .mp4"
-          value={videoUrl}
-          onChange={(e) => onChangeVideoUrl(e.target.value)}
-          className="w-full bg-[#141418] border border-[#2A2A32] rounded-xl px-3.5 py-2 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#E11D48]"
-        />
+      {/* Dedicated Video Section */}
+      <div className="pt-6 border-t border-[#1F1F24] space-y-4">
+        <div>
+          <label className="block text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+            <Video className="w-4 h-4 text-[#E11D48]" />
+            <span>Vídeo de Apresentação do Veículo</span>
+          </label>
+          <p className="text-[11px] text-gray-400 mt-1">
+            Insira o link de um vídeo do <strong>YouTube</strong>, <strong>YouTube Shorts</strong>, <strong>Vimeo</strong> ou faça upload direto de um arquivo <strong>.MP4</strong>.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
+          <div className="md:col-span-8 relative">
+            <input
+              type="url"
+              placeholder="Cole o link do vídeo: https://www.youtube.com/watch?v=... ou YouTube Shorts"
+              value={videoUrl}
+              onChange={(e) => onChangeVideoUrl(e.target.value)}
+              className="w-full bg-[#141418] border border-[#2A2A32] rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[#E11D48]"
+            />
+            {videoUrl && (
+              <button
+                type="button"
+                onClick={() => onChangeVideoUrl('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-rose-400 text-xs p-1"
+                title="Remover vídeo"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Upload Local Video File */}
+          <div className="md:col-span-4 relative">
+            <label className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-white text-xs font-semibold border border-[#2A2A32] cursor-pointer transition-colors w-full">
+              {uploadingVideo ? (
+                <Loader2 className="w-4 h-4 animate-spin text-[#E11D48]" />
+              ) : (
+                <Upload className="w-4 h-4 text-[#E11D48]" />
+              )}
+              <span>{uploadingVideo ? 'Enviando Vídeo...' : 'Upload Arquivo MP4'}</span>
+              <input
+                type="file"
+                accept="video/*"
+                disabled={uploadingVideo}
+                onChange={handleVideoFile}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+
+        {/* Video Preview Status Box */}
+        {videoUrl ? (
+          <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Check className="w-4 h-4 shrink-0 text-emerald-400" />
+              <div className="truncate">
+                <span className="font-semibold text-white block">Vídeo vinculado com sucesso!</span>
+                <span className="text-[11px] text-gray-400 truncate block">{videoUrl}</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setPreviewVideoModalOpen(true)}
+              className="px-3.5 py-1.5 rounded-lg bg-[#E11D48] hover:bg-[#F43F5E] text-white font-semibold text-xs flex items-center gap-1.5 shrink-0 shadow-md transition-colors"
+            >
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span>Testar Player de Vídeo</span>
+            </button>
+          </div>
+        ) : (
+          <div className="p-3 rounded-xl bg-[#141418] border border-[#1F1F24] text-gray-400 text-xs">
+            Nenhum vídeo vinculado a este veículo ainda. O botão "Assistir ao Vídeo do Veículo" será exibido na página do cliente assim que um vídeo for adicionado.
+          </div>
+        )}
       </div>
+
+      {/* Video Modal Preview */}
+      {videoUrl && (
+        <VideoModal
+          videoUrl={videoUrl}
+          isOpen={previewVideoModalOpen}
+          onClose={() => setPreviewVideoModalOpen(false)}
+          vehicleTitle="Pré-visualização do Vídeo"
+        />
+      )}
 
     </div>
   );

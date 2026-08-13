@@ -16,9 +16,9 @@ export const VideoModal: React.FC<VideoModalProps> = ({
 }) => {
   if (!isOpen || !videoUrl) return null;
 
-  // Determine if it's YouTube or direct MP4/Storage video
-  const isYouTube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
   let embedUrl = videoUrl;
+  const isYouTube = videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be');
+  const isVimeo = videoUrl.includes('vimeo.com');
 
   if (isYouTube) {
     if (videoUrl.includes('watch?v=')) {
@@ -27,8 +27,16 @@ export const VideoModal: React.FC<VideoModalProps> = ({
     } else if (videoUrl.includes('youtu.be/')) {
       const id = videoUrl.split('youtu.be/')[1]?.split('?')[0];
       embedUrl = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
+    } else if (videoUrl.includes('shorts/')) {
+      const id = videoUrl.split('shorts/')[1]?.split('?')[0];
+      embedUrl = `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
     }
+  } else if (isVimeo) {
+    const id = videoUrl.split('vimeo.com/')[1]?.split('?')[0];
+    embedUrl = `https://player.vimeo.com/video/${id}?autoplay=1`;
   }
+
+  const isIframe = isYouTube || isVimeo;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
@@ -56,7 +64,7 @@ export const VideoModal: React.FC<VideoModalProps> = ({
 
         {/* Video Player Frame */}
         <div className="relative aspect-[16/9] bg-black">
-          {isYouTube ? (
+          {isIframe ? (
             <iframe
               src={embedUrl}
               title="Vídeo do Veículo"
