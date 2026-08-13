@@ -6,7 +6,8 @@ import {
   Loader2,
   Check,
   Sparkles,
-  Flame
+  Flame,
+  Eye
 } from 'lucide-react';
 import type { Vehicle, FuelType, TransmissionType, BodyType, VehicleStatus } from '../../types';
 import { vehicleService } from '../../services/vehicleService';
@@ -45,6 +46,7 @@ export const AdminVehicleForm: React.FC = () => {
   const [status, setStatus] = useState<VehicleStatus>('DISPONIVEL');
   const [featured, setFeatured] = useState(false);
   const [isOffer, setIsOffer] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [videoUrl, setVideoUrl] = useState('');
 
   // Media and features
@@ -81,6 +83,7 @@ export const AdminVehicleForm: React.FC = () => {
           setStatus(data.status);
           setFeatured(data.featured);
           setIsOffer(data.is_offer);
+          setIsVisible(data.is_visible ?? true);
           setVideoUrl(data.video_url || '');
 
           const imgList = data.media?.map(m => m.url) || (data.primary_image ? [data.primary_image] : []);
@@ -146,6 +149,7 @@ export const AdminVehicleForm: React.FC = () => {
         status,
         featured,
         is_offer: isOffer,
+        is_visible: isVisible,
         video_url: videoUrl || null,
       };
 
@@ -333,8 +337,21 @@ export const AdminVehicleForm: React.FC = () => {
 
         </div>
 
-        {/* Highlight / Offer check toggles */}
+        {/* Highlight / Offer / Visibility check toggles */}
         <div className="flex flex-wrap items-center gap-6 pt-2 border-t border-[#1F1F24]">
+          <label className="flex items-center gap-2 text-xs text-white cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isVisible}
+              onChange={(e) => setIsVisible(e.target.checked)}
+              className="w-4 h-4 rounded accent-emerald-500"
+            />
+            <span className="flex items-center gap-1.5 font-semibold text-emerald-400">
+              <Eye className="w-4 h-4 text-emerald-400" />
+              Visível no Site Público
+            </span>
+          </label>
+
           <label className="flex items-center gap-2 text-xs text-white cursor-pointer select-none">
             <input
               type="checkbox"

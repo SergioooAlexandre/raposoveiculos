@@ -9,7 +9,9 @@ import {
   Edit,
   Trash2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import type { Vehicle, VehicleStatus } from '../../types';
 import { vehicleService } from '../../services/vehicleService';
@@ -32,7 +34,8 @@ export const AdminVehicles: React.FC = () => {
   const fetchVehicles = async () => {
     setLoading(true);
     try {
-      const data = await vehicleService.getVehicles();
+      // Include hidden vehicles in admin view
+      const data = await vehicleService.getVehicles({ include_hidden: true });
       setVehicles(data);
     } catch (err) {
       console.error(err);
@@ -56,6 +59,23 @@ export const AdminVehicles: React.FC = () => {
       }
     } catch {
       showToast('Erro ao alterar status.', 'error');
+    }
+  };
+
+  // Toggle Visibility ("Olhinho")
+  const handleToggleVisibility = async (id: string, currentVisible: boolean) => {
+    const nextState = !currentVisible;
+    try {
+      const ok = await vehicleService.toggleVisibility(id, nextState);
+      if (ok) {
+        setVehicles(prev => prev.map(v => v.id === id ? { ...v, is_visible: nextState } : v));
+        showToast(
+          nextState ? 'Veículo agora está VISÍVEL no site público!' : 'Veículo agora está OCULTO do site público!',
+          nextState ? 'success' : 'info'
+        );
+      }
+    } catch {
+      showToast('Erro ao alterar visibilidade do veículo.', 'error');
     }
   };
 
@@ -135,7 +155,7 @@ export const AdminVehicles: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0A0A0C] border border-[#1F1F24] p-6 rounded-3xl shadow-xl">
         <div>
           <h2 className="text-xl font-bold font-heading text-white">Controle de Estoque</h2>
-          <p className="text-xs text-gray-400">Gerencie todos os veículos cadastrados na Raposo Veículos</p>
+          <p className="text-xs text-gray-400">Gerencie e publique os veículos cadastrados na Raposo Veículos</p>
         </div>
 
         <Link
@@ -204,148 +224,178 @@ export const AdminVehicles: React.FC = () => {
                   <th className="p-4">Ano / Km</th>
                   <th className="p-4">Preço</th>
                   <th className="p-4">Status</th>
+                  <th className="p-4">Visibilidade</th>
                   <th className="p-4">Selos</th>
                   <th className="p-4 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#1F1F24]">
-                {filteredVehicles.map((v) => (
-                  <tr key={v.id} className="hover:bg-[#141418]/60 transition-colors">
-                    
-                    {/* Vehicle Thumb and Model */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={v.primary_image || 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=150&q=80'}
-                          alt=""
-                          className="w-14 h-10 object-cover rounded-lg border border-[#2A2A32] shrink-0"
-                        />
-                        <div className="min-w-0">
-                          <span className="font-mono text-[10px] text-[#E11D48] uppercase font-bold block">{v.brand}</span>
-                          <span className="font-bold text-white text-sm block truncate max-w-xs">{v.model}</span>
-                          <span className="text-[11px] text-gray-400 block truncate max-w-xs">{v.version}</span>
+                {filteredVehicles.map((v) => {
+                  const isVisible = v.is_visible !== false;
+                  return (
+                    <tr key={v.id} className="hover:bg-[#141418]/60 transition-colors">
+                      
+                      {/* Vehicle Thumb and Model */}
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={v.primary_image || 'https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&w=150&q=80'}
+                            alt=""
+                            className="w-14 h-10 object-cover rounded-lg border border-[#2A2A32] shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <span className="font-mono text-[10px] text-[#E11D48] uppercase font-bold block">{v.brand}</span>
+                            <span className="font-bold text-white text-sm block truncate max-w-xs">{v.model}</span>
+                            <span className="text-[11px] text-gray-400 block truncate max-w-xs">{v.version}</span>
+                          </div>
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Year & Km */}
-                    <td className="p-4">
-                      <div className="space-y-0.5">
-                        <span className="font-semibold text-white">{v.year}/{v.model_year}</span>
-                        <span className="text-gray-400 block font-mono">{formatKm(v.mileage)}</span>
-                      </div>
-                    </td>
+                      {/* Year & Km */}
+                      <td className="p-4">
+                        <div className="space-y-0.5">
+                          <span className="font-semibold text-white">{v.year}/{v.model_year}</span>
+                          <span className="text-gray-400 block font-mono">{formatKm(v.mileage)}</span>
+                        </div>
+                      </td>
 
-                    {/* Price */}
-                    <td className="p-4">
-                      <div className="space-y-0.5 font-mono">
-                        {v.is_offer && v.promotional_price ? (
-                          <>
-                            <span className="text-gray-500 line-through text-[10px] block">{formatCurrency(v.price)}</span>
-                            <span className="font-bold text-[#D4AF37] text-sm block">{formatCurrency(v.promotional_price)}</span>
-                          </>
-                        ) : (
-                          <span className="font-bold text-white text-sm">{formatCurrency(v.price)}</span>
-                        )}
-                      </div>
-                    </td>
+                      {/* Price */}
+                      <td className="p-4">
+                        <div className="space-y-0.5 font-mono">
+                          {v.is_offer && v.promotional_price ? (
+                            <>
+                              <span className="text-gray-500 line-through text-[10px] block">{formatCurrency(v.price)}</span>
+                              <span className="font-bold text-[#D4AF37] text-sm block">{formatCurrency(v.promotional_price)}</span>
+                            </>
+                          ) : (
+                            <span className="font-bold text-white text-sm">{formatCurrency(v.price)}</span>
+                          )}
+                        </div>
+                      </td>
 
-                    {/* Status Dropdown */}
-                    <td className="p-4">
-                      <select
-                        value={v.status}
-                        onChange={(e) => handleStatusChange(v.id, e.target.value as VehicleStatus)}
-                        className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border focus:outline-none ${
-                          v.status === 'DISPONIVEL'
-                            ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
-                            : v.status === 'RESERVADO'
-                            ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
-                            : 'bg-neutral-900 border-neutral-700 text-gray-400'
-                        }`}
-                      >
-                        <option value="DISPONIVEL">Disponível</option>
-                        <option value="RESERVADO">Reservado</option>
-                        <option value="VENDIDO">Vendido</option>
-                      </select>
-                    </td>
-
-                    {/* Badges Toggles */}
-                    <td className="p-4">
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleFeatured(v.id, v.featured)}
-                          className={`p-1.5 rounded-lg border text-xs transition-all ${
-                            v.featured
-                              ? 'bg-[#E11D48] border-[#E11D48] text-white shadow-[0_0_8px_rgba(225,29,72,0.6)]'
-                              : 'bg-[#141418] border-[#2A2A32] text-gray-500 hover:text-gray-300'
+                      {/* Status Dropdown */}
+                      <td className="p-4">
+                        <select
+                          value={v.status}
+                          onChange={(e) => handleStatusChange(v.id, e.target.value as VehicleStatus)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border focus:outline-none ${
+                            v.status === 'DISPONIVEL'
+                              ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-400'
+                              : v.status === 'RESERVADO'
+                              ? 'bg-amber-950/60 border-amber-500/40 text-amber-300'
+                              : 'bg-neutral-900 border-neutral-700 text-gray-400'
                           }`}
-                          title={v.featured ? 'Remover Destaque' : 'Marcar Destaque'}
                         >
-                          <Sparkles className="w-3.5 h-3.5" />
-                        </button>
+                          <option value="DISPONIVEL">Disponível</option>
+                          <option value="RESERVADO">Reservado</option>
+                          <option value="VENDIDO">Vendido</option>
+                        </select>
+                      </td>
 
+                      {/* Visibility Toggle ("Olhinho") */}
+                      <td className="p-4">
                         <button
                           type="button"
-                          onClick={() => handleToggleOffer(v.id, v.is_offer)}
-                          className={`p-1.5 rounded-lg border text-xs transition-all ${
-                            v.is_offer
-                              ? 'bg-[#D4AF37] border-[#D4AF37] text-black font-bold shadow-[0_0_8px_rgba(212,175,55,0.6)]'
-                              : 'bg-[#141418] border-[#2A2A32] text-gray-500 hover:text-gray-300'
+                          onClick={() => handleToggleVisibility(v.id, isVisible)}
+                          className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                            isVisible
+                              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-400 hover:bg-emerald-900/60'
+                              : 'bg-rose-950/40 border-rose-500/40 text-rose-300 hover:bg-rose-900/60'
                           }`}
-                          title={v.is_offer ? 'Remover Oferta' : 'Marcar Oferta'}
+                          title={isVisible ? 'Visível no site público (Clique para ocultar)' : 'Oculto do site público (Clique para exibir)'}
                         >
-                          <Flame className="w-3.5 h-3.5" />
+                          {isVisible ? (
+                            <>
+                              <Eye className="w-4 h-4 text-emerald-400" />
+                              <span>Visível</span>
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="w-4 h-4 text-rose-400" />
+                              <span>Oculto</span>
+                            </>
+                          )}
                         </button>
-                      </div>
-                    </td>
+                      </td>
 
-                    {/* Actions */}
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Link
-                          to={`/veiculo/${v.slug}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-gray-300 hover:text-white border border-[#2A2A32]"
-                          title="Ver no site público"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </Link>
+                      {/* Badges Toggles */}
+                      <td className="p-4">
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleFeatured(v.id, v.featured)}
+                            className={`p-1.5 rounded-lg border text-xs transition-all ${
+                              v.featured
+                                ? 'bg-[#E11D48] border-[#E11D48] text-white shadow-[0_0_8px_rgba(225,29,72,0.6)]'
+                                : 'bg-[#141418] border-[#2A2A32] text-gray-500 hover:text-gray-300'
+                            }`}
+                            title={v.featured ? 'Remover Destaque' : 'Marcar Destaque'}
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </button>
 
-                        <Link
-                          to={`/admin/veiculos/${v.id}/editar`}
-                          className="p-2 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-blue-400 border border-[#2A2A32]"
-                          title="Editar veículo"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleOffer(v.id, v.is_offer)}
+                            className={`p-1.5 rounded-lg border text-xs transition-all ${
+                              v.is_offer
+                                ? 'bg-[#D4AF37] border-[#D4AF37] text-black font-bold shadow-[0_0_8px_rgba(212,175,55,0.6)]'
+                                : 'bg-[#141418] border-[#2A2A32] text-gray-500 hover:text-gray-300'
+                            }`}
+                            title={v.is_offer ? 'Remover Oferta' : 'Marcar Oferta'}
+                          >
+                            <Flame className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicate(v.id)}
-                          className="p-2 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-purple-400 border border-[#2A2A32]"
-                          title="Duplicar veículo"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
+                      {/* Actions */}
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Link
+                            to={`/veiculo/${v.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-gray-300 hover:text-white border border-[#2A2A32]"
+                            title="Ver no site público"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setVehicleToDelete(v);
-                            setDeleteDialogOpen(true);
-                          }}
-                          className="p-2 rounded-xl bg-[#141418] hover:bg-rose-950/40 text-rose-400 border border-[#2A2A32]"
-                          title="Excluir veículo"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
+                          <Link
+                            to={`/admin/veiculos/${v.id}/editar`}
+                            className="p-2 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-blue-400 border border-[#2A2A32]"
+                            title="Editar veículo"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </Link>
 
-                  </tr>
-                ))}
+                          <button
+                            type="button"
+                            onClick={() => handleDuplicate(v.id)}
+                            className="p-2 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-purple-400 border border-[#2A2A32]"
+                            title="Duplicar veículo"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setVehicleToDelete(v);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="p-2 rounded-xl bg-[#141418] hover:bg-rose-950/40 text-rose-400 border border-[#2A2A32]"
+                            title="Excluir veículo"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

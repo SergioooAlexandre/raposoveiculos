@@ -44,6 +44,7 @@ export interface Vehicle {
   status: VehicleStatus;
   featured: boolean;
   is_offer: boolean;
+  is_visible?: boolean;
   video_url?: string | null;
   created_at: string;
   updated_at: string;
@@ -129,6 +130,7 @@ export interface VehicleFilterState {
   status?: VehicleStatus | '';
   featured?: boolean;
   is_offer?: boolean;
+  is_visible?: boolean;
   selected_features?: string[];
   sort_by?: 'newest' | 'price_asc' | 'price_desc' | 'mileage_asc' | 'mileage_desc';
 }
