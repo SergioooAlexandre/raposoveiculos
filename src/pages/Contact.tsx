@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Mail, Clock, MessageCircle } from 'lucide-react';
+import { MapPin, Mail, Clock, MessageCircle, ExternalLink } from 'lucide-react';
 import { InstagramIcon } from '../components/Icons';
 import { ContactForm } from '../components/ContactForm';
 import { useSiteSettings } from '../hooks/useSiteSettings';
@@ -10,6 +10,11 @@ export const Contact: React.FC = () => {
 
   const whatsappClean = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');
   const whatsappUrl = `https://wa.me/${whatsappClean}?text=${encodeURIComponent('Olá! Vim pelo site da Raposo Veículos e gostaria de falar com um atendente.')}`;
+
+  const currentAddress = settings?.address || 'Rodovia Raposo Tavares, km 18 - São Paulo, SP';
+  const encodedAddress = encodeURIComponent(currentAddress);
+  const mapEmbedUrl = `https://maps.google.com/maps?q=${encodedAddress}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
@@ -83,7 +88,7 @@ export const Contact: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-[10px] text-gray-400 font-mono uppercase block">Instagram Oficial</span>
-                  <span className="font-bold text-white text-sm">{settings?.instagram || '@raposoveiculos'}</span>
+                  <span className="font-bold text-white text-sm">{settings?.instagram || '@nexussitesbr'}</span>
                 </div>
               </div>
 
@@ -95,7 +100,7 @@ export const Contact: React.FC = () => {
                 <div>
                   <span className="text-[10px] text-gray-400 font-mono uppercase block">Endereço da Loja</span>
                   <span className="font-medium text-white text-xs leading-relaxed">
-                    {settings?.address || 'Rodovia Raposo Tavares, km 18 - São Paulo, SP'}
+                    {currentAddress}
                   </span>
                 </div>
               </div>
@@ -124,9 +129,21 @@ export const Contact: React.FC = () => {
 
           {/* Interactive Map Embed / Location Card */}
           <div className="bg-[#0A0A0C] border border-[#1F1F24] rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-2 text-white font-heading font-bold text-base">
-              <MapPin className="w-4 h-4 text-[#E11D48]" />
-              <span>Localização do Showroom</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-white font-heading font-bold text-base">
+                <MapPin className="w-4 h-4 text-[#E11D48]" />
+                <span>Localização do Showroom</span>
+              </div>
+
+              <a
+                href={directionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#141418] hover:bg-[#1f1f24] text-xs font-semibold text-[#E11D48] border border-[#2A2A32] transition-colors"
+              >
+                <span>Abrir Rota no Google Maps</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
             
             <div className="aspect-[16/9] w-full rounded-2xl overflow-hidden border border-[#1F1F24] bg-neutral-900">
@@ -136,7 +153,7 @@ export const Contact: React.FC = () => {
                 height="100%"
                 style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }}
                 loading="lazy"
-                src="https://maps.google.com/maps?q=Rodovia+Raposo+Tavares+Sao+Paulo&t=&z=14&ie=UTF8&iwloc=&output=embed"
+                src={mapEmbedUrl}
               />
             </div>
           </div>
