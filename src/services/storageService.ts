@@ -1,19 +1,16 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { idbStorage } from '../utils/indexedDB';
 
 export const storageService = {
   async uploadVehicleImage(file: File, vehicleId: string): Promise<string> {
     if (!isSupabaseConfigured || !supabase) {
-      // In demo mode without supabase, convert to data URL for immediate preview
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          resolve(reader.result as string);
-        };
-        reader.onerror = (error) => {
-          reject(error);
-        };
-        reader.readAsDataURL(file);
-      });
+      const mediaId = `media-${vehicleId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      try {
+        const objectUrl = await idbStorage.saveMediaBlob(mediaId, file);
+        return objectUrl;
+      } catch (e) {
+        return URL.createObjectURL(file);
+      }
     }
 
     try {
@@ -38,13 +35,9 @@ export const storageService = {
 
       return publicUrl;
     } catch (err: any) {
-      console.error('Erro ao fazer upload no Supabase Storage:', err);
-      // Fallback to FileReader
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
+      console.error('Erro ao fazer upload no Supabase Storage, fallback local:', err);
+      const mediaId = `media-${vehicleId}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+      return await idbStorage.saveMediaBlob(mediaId, file);
     }
   }
 };

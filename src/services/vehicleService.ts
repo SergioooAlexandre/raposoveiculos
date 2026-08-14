@@ -2,36 +2,66 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Vehicle, VehicleFilterState, VehicleStatus } from '../types';
 import { mockVehicles } from '../data/mockVehicles';
 import { slugify } from '../utils/formatters';
+import { idbStorage } from '../utils/indexedDB';
 
 const STORAGE_KEY = 'raposo_vehicles_local';
 
-// Helper to get runtime vehicles with localStorage persistence
-const getLocalVehicles = (): Vehicle[] => {
+// In-memory cache for ultra-fast access
+let memoryVehiclesCache: Vehicle[] | null = null;
+
+// Helper to get runtime vehicles with localStorage + IndexedDB fallback
+const getLocalVehiclesSync = (): Vehicle[] => {
+  if (memoryVehiclesCache) {
+    return memoryVehiclesCache;
+  }
+
   const stored = localStorage.getItem(STORAGE_KEY);
   if (stored) {
     try {
-      return JSON.parse(stored) as Vehicle[];
+      memoryVehiclesCache = JSON.parse(stored) as Vehicle[];
+      return memoryVehiclesCache;
     } catch (e) {
       console.error('Erro ao ler veículos do localStorage:', e);
     }
   }
-  // Initialize with mock vehicles with is_visible: true
+
   const initial = mockVehicles.map(v => ({
     ...v,
     is_visible: v.is_visible ?? true,
   }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+  memoryVehiclesCache = initial;
+  saveLocalVehicles(initial);
   return initial;
 };
 
 const saveLocalVehicles = (vehicles: Vehicle[]): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+  memoryVehiclesCache = vehicles;
+  
+  // Asynchronous backup in IndexedDB (no quota limits)
+  idbStorage.saveVehicles(vehicles).catch(err => {
+    console.warn('Erro ao salvar no IndexedDB:', err);
+  });
+
+  // Safely attempt localStorage write without quota crash
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(vehicles));
+  } catch (err: any) {
+    console.warn('Quota de localStorage excedida, mantendo dados no IndexedDB e memória:', err);
+  }
 };
 
 export const vehicleService = {
   async getVehicles(filters?: VehicleFilterState & { include_hidden?: boolean }): Promise<Vehicle[]> {
     if (!isSupabaseConfigured || !supabase) {
-      let filtered = getLocalVehicles();
+      // Try reading from IndexedDB first if memory is empty
+      if (!memoryVehiclesCache) {
+        const idbData = await idbStorage.getVehicles();
+        if (idbData && idbData.length > 0) {
+          memoryVehiclesCache = idbData as Vehicle[];
+        }
+      }
+
+      let filtered = [...getLocalVehiclesSync()];
 
       // By default for public queries, filter out hidden vehicles unless include_hidden is explicitly set to true
       if (!filters?.include_hidden && filters?.is_visible === undefined) {
@@ -224,8 +254,8 @@ export const vehicleService = {
         };
       });
     } catch (err) {
-      console.error('Erro ao buscar veículos no Supabase, fallback para local storage:', err);
-      return getLocalVehicles();
+      console.error('Erro ao buscar veículos no Supabase, fallback local:', err);
+      return getLocalVehiclesSync();
     }
   },
 
@@ -294,7 +324,7 @@ export const vehicleService = {
         })),
       };
 
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const updated = [newVehicle, ...current];
       saveLocalVehicles(updated);
       return newVehicle;
@@ -360,7 +390,7 @@ export const vehicleService = {
 
   async updateVehicle(id: string, vehicleData: Partial<Vehicle>, mediaUrls?: string[], featuresList?: string[]): Promise<Vehicle | null> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const idx = current.findIndex(v => v.id === id);
       if (idx === -1) return null;
 
@@ -450,7 +480,7 @@ export const vehicleService = {
 
   async updateStatus(id: string, status: VehicleStatus): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const v = current.find(item => item.id === id);
       if (v) {
         v.status = status;
@@ -467,7 +497,7 @@ export const vehicleService = {
 
   async toggleFeatured(id: string, featured: boolean): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const v = current.find(item => item.id === id);
       if (v) {
         v.featured = featured;
@@ -483,7 +513,7 @@ export const vehicleService = {
 
   async toggleOffer(id: string, is_offer: boolean): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const v = current.find(item => item.id === id);
       if (v) {
         v.is_offer = is_offer;
@@ -499,7 +529,7 @@ export const vehicleService = {
 
   async toggleVisibility(id: string, is_visible: boolean): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const v = current.find(item => item.id === id);
       if (v) {
         v.is_visible = is_visible;
@@ -515,7 +545,7 @@ export const vehicleService = {
 
   async deleteVehicle(id: string): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalVehicles();
+      const current = getLocalVehiclesSync();
       const filtered = current.filter(v => v.id !== id);
       saveLocalVehicles(filtered);
       return true;
