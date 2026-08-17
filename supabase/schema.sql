@@ -1,5 +1,5 @@
 -- Raposo Veículos - PostgreSQL Database Schema Migration Script
--- Comprehensive Database Definition for Supabase with RLS & Storage
+-- Comprehensive Database Definition for Supabase with Permissive RLS & Storage
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -19,10 +19,10 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS public.site_settings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     store_name TEXT NOT NULL DEFAULT 'Raposo Veículos',
-    whatsapp TEXT NOT NULL DEFAULT '5511999999999',
-    phone TEXT NOT NULL DEFAULT '(11) 3456-7890',
+    whatsapp TEXT NOT NULL DEFAULT '5579998476431',
+    phone TEXT NOT NULL DEFAULT '(79) 99847-6431',
     email TEXT NOT NULL DEFAULT 'contato@raposoveiculos.com.br',
-    instagram TEXT DEFAULT '@raposoveiculos',
+    instagram TEXT DEFAULT '@nexussitesbr',
     address TEXT DEFAULT 'Rodovia Raposo Tavares, km 18 - São Paulo, SP',
     opening_hours TEXT DEFAULT 'Segunda a Sexta: 08h às 19h | Sábado: 08h às 16h',
     logo_url TEXT,
@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS public.vehicles (
     status TEXT NOT NULL DEFAULT 'DISPONIVEL' CONSTRAINT check_vehicle_status CHECK (status IN ('DISPONIVEL', 'RESERVADO', 'VENDIDO')),
     featured BOOLEAN NOT NULL DEFAULT FALSE,
     is_offer BOOLEAN NOT NULL DEFAULT FALSE,
+    is_visible BOOLEAN NOT NULL DEFAULT TRUE,
     video_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -145,7 +146,7 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON public.leads(status);
 CREATE INDEX IF NOT EXISTS idx_proposals_vehicle ON public.proposals(vehicle_id);
 CREATE INDEX IF NOT EXISTS idx_proposals_status ON public.proposals(status);
 
--- 5. ROW LEVEL SECURITY (RLS)
+-- 5. ROW LEVEL SECURITY (RLS) POLICIES
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vehicles ENABLE ROW LEVEL SECURITY;
@@ -154,46 +155,15 @@ ALTER TABLE public.vehicle_features ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 
--- Helper security function to check if current user is an admin
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS $$
-BEGIN
-    RETURN EXISTS (
-        SELECT 1 FROM public.admin_users 
-        WHERE user_id = auth.uid()
-    );
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Permissive RLS Policies for Anon Key (password RP2026 application access)
+CREATE POLICY "Allow all for anon site_settings" ON public.site_settings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon vehicles" ON public.vehicles FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon vehicle_media" ON public.vehicle_media FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon vehicle_features" ON public.vehicle_features FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon leads" ON public.leads FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all for anon proposals" ON public.proposals FOR ALL USING (true) WITH CHECK (true);
 
--- Policies for site_settings
-CREATE POLICY "Public can view site settings" ON public.site_settings FOR SELECT USING (true);
-CREATE POLICY "Admins can update site settings" ON public.site_settings FOR ALL USING (public.is_admin());
-
--- Policies for admin_users
-CREATE POLICY "Admins can view admin_users" ON public.admin_users FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "Admins can manage admin_users" ON public.admin_users FOR ALL USING (public.is_admin());
-
--- Policies for vehicles (Public can read available/all, Admin full control)
-CREATE POLICY "Public can read vehicles" ON public.vehicles FOR SELECT USING (true);
-CREATE POLICY "Admins can manage vehicles" ON public.vehicles FOR ALL USING (public.is_admin());
-
--- Policies for vehicle_media
-CREATE POLICY "Public can read vehicle media" ON public.vehicle_media FOR SELECT USING (true);
-CREATE POLICY "Admins can manage vehicle media" ON public.vehicle_media FOR ALL USING (public.is_admin());
-
--- Policies for vehicle_features
-CREATE POLICY "Public can read vehicle features" ON public.vehicle_features FOR SELECT USING (true);
-CREATE POLICY "Admins can manage vehicle features" ON public.vehicle_features FOR ALL USING (public.is_admin());
-
--- Policies for leads
-CREATE POLICY "Public can insert leads" ON public.leads FOR INSERT WITH CHECK (true);
-CREATE POLICY "Admins can manage leads" ON public.leads FOR ALL USING (public.is_admin());
-
--- Policies for proposals
-CREATE POLICY "Public can insert proposals" ON public.proposals FOR INSERT WITH CHECK (true);
-CREATE POLICY "Admins can manage proposals" ON public.proposals FOR ALL USING (public.is_admin());
-
--- 6. INITIAL SETTINGS SEED (Ensures default site config exists)
+-- 6. INITIAL SETTINGS SEED
 INSERT INTO public.site_settings (store_name, whatsapp, phone, email, instagram, address, opening_hours, seo_title, seo_description)
-SELECT 'Raposo Veículos', '5511999999999', '(11) 3456-7890', 'contato@raposoveiculos.com.br', '@raposoveiculos', 'Rodovia Raposo Tavares, km 18 - São Paulo, SP', 'Segunda a Sexta: 08h às 19h | Sábado: 08h às 16h', 'Raposo Veículos | Catálogo Digital Premium', 'Veículos selecionados, vistoriados, com procedência garantida, simulação de financiamento e as melhores condições.'
+SELECT 'Raposo Veículos', '5579998476431', '(79) 99847-6431', 'contato@raposoveiculos.com.br', '@nexussitesbr', 'Rodovia Raposo Tavares, km 18 - São Paulo, SP', 'Segunda a Sexta: 08h às 19h | Sábado: 08h às 16h', 'Raposo Veículos | Catálogo Digital Premium', 'Veículos selecionados, vistoriados, com procedência garantida, simulação de financiamento e as melhores condições.'
 WHERE NOT EXISTS (SELECT 1 FROM public.site_settings);
