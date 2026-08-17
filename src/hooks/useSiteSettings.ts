@@ -21,13 +21,20 @@ export function useSiteSettings() {
   useEffect(() => {
     fetchSettings();
 
+    // Subscribe to local custom event
     const handleSettingsUpdated = () => {
       fetchSettings();
     };
-
     window.addEventListener('raposo_settings_updated', handleSettingsUpdated);
+
+    // Subscribe to Supabase Realtime global changes
+    const unsubscribeRealtime = settingsService.subscribeToRealtime(() => {
+      fetchSettings();
+    });
+
     return () => {
       window.removeEventListener('raposo_settings_updated', handleSettingsUpdated);
+      unsubscribeRealtime();
     };
   }, []);
 

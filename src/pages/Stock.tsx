@@ -55,6 +55,14 @@ export const Stock: React.FC = () => {
     };
 
     fetchVehicles();
+
+    const unsubscribe = vehicleService.subscribeToRealtime(() => {
+      fetchVehicles();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [filters]);
 
   // Update URL params

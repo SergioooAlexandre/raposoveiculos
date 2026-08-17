@@ -70,6 +70,14 @@ export const VehicleDetail: React.FC = () => {
     };
 
     fetchDetail();
+
+    const unsubscribe = vehicleService.subscribeToRealtime(() => {
+      fetchDetail();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [slug]);
 
   if (loading) {

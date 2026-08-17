@@ -47,6 +47,14 @@ export const AdminVehicles: React.FC = () => {
 
   useEffect(() => {
     fetchVehicles();
+
+    const unsubscribe = vehicleService.subscribeToRealtime(() => {
+      fetchVehicles();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   // Quick Status change

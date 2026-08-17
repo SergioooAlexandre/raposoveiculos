@@ -2,30 +2,36 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { SiteSettings } from '../types';
 import { mockSiteSettings } from '../data/mockVehicles';
 
-const SETTINGS_STORAGE_KEY = 'raposo_settings_local';
-
-const getLocalSettings = (): SiteSettings => {
-  const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored) as SiteSettings;
-    } catch (e) {
-      console.error('Erro ao carregar configurações locais:', e);
-    }
-  }
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(mockSiteSettings));
-  return mockSiteSettings;
-};
-
-const saveLocalSettings = (settings: SiteSettings): void => {
-  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
-  window.dispatchEvent(new Event('raposo_settings_updated'));
-};
+let unconfiguredMockSettings: SiteSettings = { ...mockSiteSettings };
 
 export const settingsService = {
+  /**
+   * Subscribe to real-time changes in the Supabase 'site_settings' table.
+   * Enables instant global synchronization across all connected devices (mobile, desktop).
+   */
+  subscribeToRealtime(onUpdate: () => void) {
+    const client = supabase;
+    if (!isSupabaseConfigured || !client) return () => {};
+
+    const channel = client
+      .channel('site_settings_realtime_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        () => {
+          onUpdate();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  },
+
   async getSettings(): Promise<SiteSettings> {
     if (!isSupabaseConfigured || !supabase) {
-      return getLocalSettings();
+      return unconfiguredMockSettings;
     }
 
     try {
@@ -36,26 +42,25 @@ export const settingsService = {
         .single();
 
       if (error || !data) {
-        return getLocalSettings();
+        return unconfiguredMockSettings;
       }
 
       return data;
     } catch (err) {
-      console.error('Erro ao buscar configurações do site no Supabase, fallback local:', err);
-      return getLocalSettings();
+      console.error('Erro ao buscar configurações do site no Supabase:', err);
+      return unconfiguredMockSettings;
     }
   },
 
   async updateSettings(settings: Partial<SiteSettings>): Promise<SiteSettings> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalSettings();
-      const updated: SiteSettings = {
-        ...current,
+      unconfiguredMockSettings = {
+        ...unconfiguredMockSettings,
         ...settings,
         updated_at: new Date().toISOString(),
       };
-      saveLocalSettings(updated);
-      return updated;
+      window.dispatchEvent(new Event('raposo_settings_updated'));
+      return unconfiguredMockSettings;
     }
 
     try {
@@ -106,11 +111,10 @@ export const settingsService = {
         return data;
       }
     } catch (err) {
-      console.error('Erro ao atualizar configurações no Supabase, atualizando localmente:', err);
-      const current = getLocalSettings();
-      const updated = { ...current, ...settings };
-      saveLocalSettings(updated);
-      return updated;
+      console.error('Erro ao atualizar configurações no Supabase:', err);
+      unconfiguredMockSettings = { ...unconfiguredMockSettings, ...settings };
+      window.dispatchEvent(new Event('raposo_settings_updated'));
+      return unconfiguredMockSettings;
     }
   }
 };

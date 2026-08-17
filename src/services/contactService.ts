@@ -1,9 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Lead, LeadStatus } from '../types';
 
-const LEADS_STORAGE_KEY = 'raposo_leads_local';
-
-const initialMockLeads: Lead[] = [
+let unconfiguredMockLeads: Lead[] = [
   {
     id: 'lead-1',
     vehicle_id: '2b91e1d0-1b2c-4e3f-9876-000000000002',
@@ -30,27 +28,33 @@ const initialMockLeads: Lead[] = [
   }
 ];
 
-const getLocalLeads = (): Lead[] => {
-  const stored = localStorage.getItem(LEADS_STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored) as Lead[];
-    } catch (e) {
-      console.error('Erro ao ler leads do localStorage:', e);
-    }
-  }
-  localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(initialMockLeads));
-  return initialMockLeads;
-};
-
-const saveLocalLeads = (leads: Lead[]): void => {
-  localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(leads));
-};
-
 export const contactService = {
+  /**
+   * Subscribe to real-time changes in the Supabase 'leads' table.
+   */
+  subscribeToRealtime(onUpdate: () => void) {
+    const client = supabase;
+    if (!isSupabaseConfigured || !client) return () => {};
+
+    const channel = client
+      .channel('leads_realtime_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'leads' },
+        () => {
+          onUpdate();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  },
+
   async getLeads(): Promise<Lead[]> {
     if (!isSupabaseConfigured || !supabase) {
-      return getLocalLeads();
+      return unconfiguredMockLeads;
     }
 
     try {
@@ -69,8 +73,8 @@ export const contactService = {
         vehicle_title: item.vehicles ? `${item.vehicles.brand} ${item.vehicles.model} ${item.vehicles.year}` : null,
       }));
     } catch (err) {
-      console.error('Erro ao buscar leads no Supabase, fallback local:', err);
-      return getLocalLeads();
+      console.error('Erro ao buscar leads no Supabase:', err);
+      return unconfiguredMockLeads;
     }
   },
 
@@ -82,9 +86,7 @@ export const contactService = {
         status: 'NOVO',
         created_at: new Date().toISOString(),
       };
-      const current = getLocalLeads();
-      const updated = [newLead, ...current];
-      saveLocalLeads(updated);
+      unconfiguredMockLeads = [newLead, ...unconfiguredMockLeads];
       return newLead;
     }
 
@@ -108,11 +110,9 @@ export const contactService = {
 
   async updateLeadStatus(id: string, status: LeadStatus): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalLeads();
-      const lead = current.find(l => l.id === id);
+      const lead = unconfiguredMockLeads.find(l => l.id === id);
       if (lead) {
         lead.status = status;
-        saveLocalLeads(current);
         return true;
       }
       return false;
@@ -128,9 +128,7 @@ export const contactService = {
 
   async deleteLead(id: string): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalLeads();
-      const filtered = current.filter(l => l.id !== id);
-      saveLocalLeads(filtered);
+      unconfiguredMockLeads = unconfiguredMockLeads.filter(l => l.id !== id);
       return true;
     }
 

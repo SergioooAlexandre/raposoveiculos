@@ -25,8 +25,10 @@ import {
   Pie,
   Cell
 } from 'recharts';
-import type { DashboardStats } from '../../services/dashboardService';
-import { dashboardService } from '../../services/dashboardService';
+import { dashboardService, type DashboardStats } from '../../services/dashboardService';
+import { vehicleService } from '../../services/vehicleService';
+import { proposalService } from '../../services/proposalService';
+import { contactService } from '../../services/contactService';
 import { LoadingState } from '../../components/ConfirmDialog';
 import { formatCurrency } from '../../utils/formatters';
 import { useAuth } from '../../contexts/AuthContext';
@@ -62,6 +64,16 @@ export const AdminDashboard: React.FC = () => {
     };
 
     loadDashboard();
+
+    const unsubVehicles = vehicleService.subscribeToRealtime(() => loadDashboard());
+    const unsubProposals = proposalService.subscribeToRealtime(() => loadDashboard());
+    const unsubLeads = contactService.subscribeToRealtime(() => loadDashboard());
+
+    return () => {
+      unsubVehicles();
+      unsubProposals();
+      unsubLeads();
+    };
   }, []);
 
   if (loading || !stats) {

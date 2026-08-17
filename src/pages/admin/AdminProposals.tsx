@@ -32,6 +32,14 @@ export const AdminProposals: React.FC = () => {
 
   useEffect(() => {
     fetchProposals();
+
+    const unsubscribe = proposalService.subscribeToRealtime(() => {
+      fetchProposals();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleStatusChange = async (id: string, newStatus: ProposalStatus) => {

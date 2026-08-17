@@ -32,6 +32,14 @@ export const AdminContacts: React.FC = () => {
 
   useEffect(() => {
     fetchLeads();
+
+    const unsubscribe = contactService.subscribeToRealtime(() => {
+      fetchLeads();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const handleStatusChange = async (id: string, newStatus: LeadStatus) => {

@@ -1,9 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Proposal, ProposalStatus } from '../types';
 
-const PROPOSALS_STORAGE_KEY = 'raposo_proposals_local';
-
-const initialMockProposals: Proposal[] = [
+let unconfiguredMockProposals: Proposal[] = [
   {
     id: 'prop-1',
     vehicle_id: '1a91e1d0-1b2c-4e3f-9876-000000000001',
@@ -36,27 +34,33 @@ const initialMockProposals: Proposal[] = [
   }
 ];
 
-const getLocalProposals = (): Proposal[] => {
-  const stored = localStorage.getItem(PROPOSALS_STORAGE_KEY);
-  if (stored) {
-    try {
-      return JSON.parse(stored) as Proposal[];
-    } catch (e) {
-      console.error('Erro ao ler propostas do localStorage:', e);
-    }
-  }
-  localStorage.setItem(PROPOSALS_STORAGE_KEY, JSON.stringify(initialMockProposals));
-  return initialMockProposals;
-};
-
-const saveLocalProposals = (proposals: Proposal[]): void => {
-  localStorage.setItem(PROPOSALS_STORAGE_KEY, JSON.stringify(proposals));
-};
-
 export const proposalService = {
+  /**
+   * Subscribe to real-time changes in the Supabase 'proposals' table.
+   */
+  subscribeToRealtime(onUpdate: () => void) {
+    const client = supabase;
+    if (!isSupabaseConfigured || !client) return () => {};
+
+    const channel = client
+      .channel('proposals_realtime_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'proposals' },
+        () => {
+          onUpdate();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      client.removeChannel(channel);
+    };
+  },
+
   async getProposals(): Promise<Proposal[]> {
     if (!isSupabaseConfigured || !supabase) {
-      return getLocalProposals();
+      return unconfiguredMockProposals;
     }
 
     try {
@@ -75,8 +79,8 @@ export const proposalService = {
         vehicle_title: p.vehicles ? `${p.vehicles.brand} ${p.vehicles.model} ${p.vehicles.year}` : 'Veículo',
       }));
     } catch (err) {
-      console.error('Erro ao buscar propostas no Supabase, fallback local:', err);
-      return getLocalProposals();
+      console.error('Erro ao buscar propostas no Supabase:', err);
+      return unconfiguredMockProposals;
     }
   },
 
@@ -88,9 +92,7 @@ export const proposalService = {
         status: 'NOVA',
         created_at: new Date().toISOString(),
       };
-      const current = getLocalProposals();
-      const updated = [newProp, ...current];
-      saveLocalProposals(updated);
+      unconfiguredMockProposals = [newProp, ...unconfiguredMockProposals];
       return newProp;
     }
 
@@ -117,11 +119,9 @@ export const proposalService = {
 
   async updateProposalStatus(id: string, status: ProposalStatus): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalProposals();
-      const prop = current.find(p => p.id === id);
+      const prop = unconfiguredMockProposals.find(p => p.id === id);
       if (prop) {
         prop.status = status;
-        saveLocalProposals(current);
         return true;
       }
       return false;
@@ -137,9 +137,7 @@ export const proposalService = {
 
   async deleteProposal(id: string): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const current = getLocalProposals();
-      const filtered = current.filter(p => p.id !== id);
-      saveLocalProposals(filtered);
+      unconfiguredMockProposals = unconfiguredMockProposals.filter(p => p.id !== id);
       return true;
     }
 

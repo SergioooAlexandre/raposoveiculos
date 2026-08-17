@@ -35,6 +35,14 @@ export const Home: React.FC = () => {
       }
     };
     loadFeatured();
+
+    const unsubscribe = vehicleService.subscribeToRealtime(() => {
+      loadFeatured();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const whatsappPhone = cleanPhoneForWhatsApp(settings?.whatsapp || '5579998476431');

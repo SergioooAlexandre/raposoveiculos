@@ -23,6 +23,14 @@ export const Offers: React.FC = () => {
       }
     };
     fetchOffers();
+
+    const unsubscribe = vehicleService.subscribeToRealtime(() => {
+      fetchOffers();
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (
