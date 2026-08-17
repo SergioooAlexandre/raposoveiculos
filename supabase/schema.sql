@@ -1,5 +1,5 @@
 -- Raposo Veículos - PostgreSQL Database Schema Migration Script
--- Comprehensive Database Definition for Supabase with Permissive RLS & Storage
+-- Comprehensive Database Definition for Supabase with Enterprise RLS Security
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -155,13 +155,21 @@ ALTER TABLE public.vehicle_features ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 
--- Permissive RLS Policies for Anon Key (password RP2026 application access)
-CREATE POLICY "Allow all for anon site_settings" ON public.site_settings FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon vehicles" ON public.vehicles FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon vehicle_media" ON public.vehicle_media FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon vehicle_features" ON public.vehicle_features FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon leads" ON public.leads FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all for anon proposals" ON public.proposals FOR ALL USING (true) WITH CHECK (true);
+-- Public Read & Submit Policies
+CREATE POLICY "Public view site settings" ON public.site_settings FOR SELECT USING (true);
+CREATE POLICY "Public view visible vehicles" ON public.vehicles FOR SELECT USING (is_visible = true OR auth.role() = 'authenticated');
+CREATE POLICY "Public view vehicle media" ON public.vehicle_media FOR SELECT USING (true);
+CREATE POLICY "Public view vehicle features" ON public.vehicle_features FOR SELECT USING (true);
+CREATE POLICY "Public submit leads" ON public.leads FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public submit proposals" ON public.proposals FOR INSERT WITH CHECK (true);
+
+-- Authenticated Admin CRUD Policies
+CREATE POLICY "Admins manage site settings" ON public.site_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admins manage vehicles" ON public.vehicles FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admins manage vehicle media" ON public.vehicle_media FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admins manage vehicle features" ON public.vehicle_features FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admins manage leads" ON public.leads FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "Admins manage proposals" ON public.proposals FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- 6. INITIAL SETTINGS SEED
 INSERT INTO public.site_settings (store_name, whatsapp, phone, email, instagram, address, opening_hours, seo_title, seo_description)
