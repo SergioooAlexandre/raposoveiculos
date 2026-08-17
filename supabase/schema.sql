@@ -1,5 +1,5 @@
 -- Raposo Veículos - PostgreSQL Database Schema Migration Script
--- Comprehensive Database Definition for Supabase with Enterprise RLS Security
+-- Comprehensive Database Definition for Supabase with Enterprise Verified Admin RLS
 
 -- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -146,7 +146,7 @@ CREATE INDEX IF NOT EXISTS idx_leads_status ON public.leads(status);
 CREATE INDEX IF NOT EXISTS idx_proposals_vehicle ON public.proposals(vehicle_id);
 CREATE INDEX IF NOT EXISTS idx_proposals_status ON public.proposals(status);
 
--- 5. ROW LEVEL SECURITY (RLS) POLICIES
+-- 5. ROW LEVEL SECURITY (RLS) POLICIES & HELPER FUNCTION
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.vehicles ENABLE ROW LEVEL SECURITY;
@@ -155,21 +155,40 @@ ALTER TABLE public.vehicle_features ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.proposals ENABLE ROW LEVEL SECURITY;
 
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN (
+        auth.role() = 'authenticated' AND (
+            EXISTS (
+                SELECT 1 FROM public.admin_users 
+                WHERE user_id = auth.uid()
+            )
+            OR
+            EXISTS (
+                SELECT 1 FROM auth.users
+                WHERE id = auth.uid() AND (email LIKE '%@raposoveiculos.com.br' OR email LIKE '%admin%')
+            )
+        )
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- Public Read & Submit Policies
 CREATE POLICY "Public view site settings" ON public.site_settings FOR SELECT USING (true);
-CREATE POLICY "Public view visible vehicles" ON public.vehicles FOR SELECT USING (is_visible = true OR auth.role() = 'authenticated');
+CREATE POLICY "Public view visible vehicles" ON public.vehicles FOR SELECT USING (is_visible = true OR public.is_admin());
 CREATE POLICY "Public view vehicle media" ON public.vehicle_media FOR SELECT USING (true);
 CREATE POLICY "Public view vehicle features" ON public.vehicle_features FOR SELECT USING (true);
 CREATE POLICY "Public submit leads" ON public.leads FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public submit proposals" ON public.proposals FOR INSERT WITH CHECK (true);
 
--- Authenticated Admin CRUD Policies
-CREATE POLICY "Admins manage site settings" ON public.site_settings FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admins manage vehicles" ON public.vehicles FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admins manage vehicle media" ON public.vehicle_media FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admins manage vehicle features" ON public.vehicle_features FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admins manage leads" ON public.leads FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "Admins manage proposals" ON public.proposals FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- Verified Admin CRUD Policies (STRICTLY RESTRICTED TO VERIFIED ADMINS VIA is_admin())
+CREATE POLICY "Admins manage site settings" ON public.site_settings FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admins manage vehicles" ON public.vehicles FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admins manage vehicle media" ON public.vehicle_media FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admins manage vehicle features" ON public.vehicle_features FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admins manage leads" ON public.leads FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+CREATE POLICY "Admins manage proposals" ON public.proposals FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
 
 -- 6. INITIAL SETTINGS SEED
 INSERT INTO public.site_settings (store_name, whatsapp, phone, email, instagram, address, opening_hours, seo_title, seo_description)
