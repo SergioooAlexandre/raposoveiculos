@@ -12,6 +12,7 @@ import {
 import type { Vehicle, FuelType, TransmissionType, BodyType, VehicleStatus } from '../../types';
 import { vehicleService } from '../../services/vehicleService';
 import { MediaUploader } from '../../components/MediaUploader';
+import { SupabaseStatusBanner } from '../../components/admin/SupabaseStatusBanner';
 import { initialAvailableFeatures } from '../../data/mockVehicles';
 import { useToast } from '../../hooks/useToast';
 
@@ -181,6 +182,7 @@ export const AdminVehicleForm: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-5xl mx-auto pb-12">
+      <SupabaseStatusBanner />
       
       {/* Top Bar Navigation */}
       <div className="flex items-center justify-between gap-4">

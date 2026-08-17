@@ -1,5 +1,7 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
+const SUPABASE_NOT_CONFIGURED_ERROR = 'SUPABASE_DESCONECTADO: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram configuradas na Vercel. Cadastre-as em Settings > Environment Variables no painel da Vercel para permitir upload de mídias para a nuvem.';
+
 export const storageService = {
   /**
    * Upload an image or video file to Supabase Storage bucket 'vehicle-media'.
@@ -7,13 +9,7 @@ export const storageService = {
    */
   async uploadVehicleMedia(file: File, vehicleId: string, isVideo = false): Promise<string> {
     if (!isSupabaseConfigured || !supabase) {
-      // Unconfigured environment fallback (Data URL for local preview)
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = (err) => reject(err);
-        reader.readAsDataURL(file);
-      });
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     try {
@@ -31,7 +27,7 @@ export const storageService = {
 
       if (uploadError) {
         console.error('Erro ao fazer upload no Supabase Storage:', uploadError);
-        throw uploadError;
+        throw new Error(`Erro de Storage no Supabase: ${uploadError.message}. Verifique se o bucket 'vehicle-media' foi criado e configurado como Público no Supabase.`);
       }
 
       const { data: { publicUrl } } = supabase.storage
@@ -41,12 +37,7 @@ export const storageService = {
       return publicUrl;
     } catch (err: any) {
       console.error('Erro ao fazer upload de mídia para o Supabase Storage:', err);
-      // Temporary fallback data URL if bucket fails
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
+      throw err;
     }
   },
 

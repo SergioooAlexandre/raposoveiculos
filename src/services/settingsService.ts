@@ -2,13 +2,9 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { SiteSettings } from '../types';
 import { mockSiteSettings } from '../data/mockVehicles';
 
-let unconfiguredMockSettings: SiteSettings = { ...mockSiteSettings };
+const SUPABASE_NOT_CONFIGURED_ERROR = 'SUPABASE_DESCONECTADO: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram configuradas na Vercel. Cadastre-as em Settings > Environment Variables no painel da Vercel para permitir salvamento global entre computadores e celulares.';
 
 export const settingsService = {
-  /**
-   * Subscribe to real-time changes in the Supabase 'site_settings' table.
-   * Enables instant global synchronization across all connected devices (mobile, desktop).
-   */
   subscribeToRealtime(onUpdate: () => void) {
     const client = supabase;
     if (!isSupabaseConfigured || !client) return () => {};
@@ -31,7 +27,7 @@ export const settingsService = {
 
   async getSettings(): Promise<SiteSettings> {
     if (!isSupabaseConfigured || !supabase) {
-      return unconfiguredMockSettings;
+      return mockSiteSettings;
     }
 
     try {
@@ -42,25 +38,19 @@ export const settingsService = {
         .single();
 
       if (error || !data) {
-        return unconfiguredMockSettings;
+        return mockSiteSettings;
       }
 
       return data;
     } catch (err) {
       console.error('Erro ao buscar configurações do site no Supabase:', err);
-      return unconfiguredMockSettings;
+      return mockSiteSettings;
     }
   },
 
   async updateSettings(settings: Partial<SiteSettings>): Promise<SiteSettings> {
     if (!isSupabaseConfigured || !supabase) {
-      unconfiguredMockSettings = {
-        ...unconfiguredMockSettings,
-        ...settings,
-        updated_at: new Date().toISOString(),
-      };
-      window.dispatchEvent(new Event('raposo_settings_updated'));
-      return unconfiguredMockSettings;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     try {
@@ -110,11 +100,9 @@ export const settingsService = {
         window.dispatchEvent(new Event('raposo_settings_updated'));
         return data;
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao atualizar configurações no Supabase:', err);
-      unconfiguredMockSettings = { ...unconfiguredMockSettings, ...settings };
-      window.dispatchEvent(new Event('raposo_settings_updated'));
-      return unconfiguredMockSettings;
+      throw new Error(`Erro ao atualizar configurações no Supabase: ${err.message || err}`);
     }
   }
 };

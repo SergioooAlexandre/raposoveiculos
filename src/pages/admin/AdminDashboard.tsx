@@ -11,8 +11,7 @@ import {
   Users,
   TrendingUp,
   ArrowRight,
-  PlusCircle,
-  ShieldAlert
+  PlusCircle
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -29,12 +28,11 @@ import { dashboardService, type DashboardStats } from '../../services/dashboardS
 import { vehicleService } from '../../services/vehicleService';
 import { proposalService } from '../../services/proposalService';
 import { contactService } from '../../services/contactService';
+import { SupabaseStatusBanner } from '../../components/admin/SupabaseStatusBanner';
 import { LoadingState } from '../../components/ConfirmDialog';
 import { formatCurrency } from '../../utils/formatters';
-import { useAuth } from '../../contexts/AuthContext';
 
 export const AdminDashboard: React.FC = () => {
-  const { isSupabaseConnected } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pieData, setPieData] = useState<any[]>([]);
   const [stockEvolution, setStockEvolution] = useState<any[]>([]);
@@ -94,28 +92,8 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       
-      {/* Demo notice if unconfigured */}
-      {!isSupabaseConnected && (
-        <div className="p-4 rounded-2xl bg-[#0A0A0C] border border-amber-500/30 text-amber-300 text-xs flex items-start justify-between gap-3 shadow-lg">
-          <div className="flex items-start gap-2.5">
-            <ShieldAlert className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
-            <div className="space-y-1">
-              <span className="font-bold font-heading text-sm text-white block">
-                Ambiente de Homologação / Demonstração
-              </span>
-              <p className="text-gray-400 leading-relaxed">
-                O Supabase ainda não está conectado via <code>.env</code>. O painel está exibindo dados mock demonstrativos para validação de layout, filtros e fluxos. As alterações feitas em runtime funcionarão normalmente nesta sessão.
-              </p>
-            </div>
-          </div>
-          <Link
-            to="/admin/configuracoes"
-            className="px-3 py-1.5 rounded-lg bg-[#141418] hover:bg-[#1f1f24] text-white font-semibold text-xs border border-[#2A2A32] shrink-0"
-          >
-            Ver Configurações
-          </Link>
-        </div>
-      )}
+      {/* Supabase Connection Status Banner */}
+      <SupabaseStatusBanner />
 
       {/* Top Value Banner */}
       <div className="bg-[#0A0A0C] border border-[#1F1F24] rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

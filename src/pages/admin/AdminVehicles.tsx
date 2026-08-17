@@ -16,6 +16,7 @@ import {
 import type { Vehicle, VehicleStatus } from '../../types';
 import { vehicleService } from '../../services/vehicleService';
 import { ConfirmDialog, LoadingState, EmptyState } from '../../components/ConfirmDialog';
+import { SupabaseStatusBanner } from '../../components/admin/SupabaseStatusBanner';
 import { formatCurrency, formatKm } from '../../utils/formatters';
 import { useToast } from '../../hooks/useToast';
 
@@ -158,6 +159,7 @@ export const AdminVehicles: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <SupabaseStatusBanner />
       
       {/* Top Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#0A0A0C] border border-[#1F1F24] p-6 rounded-3xl shadow-xl">

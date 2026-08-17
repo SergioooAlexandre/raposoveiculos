@@ -3,8 +3,7 @@ import type { Vehicle, VehicleFilterState, VehicleStatus } from '../types';
 import { mockVehicles } from '../data/mockVehicles';
 import { slugify } from '../utils/formatters';
 
-// Runtime mock memory storage for unconfigured demo mode ONLY
-let unconfiguredMockVehicles: Vehicle[] = [...mockVehicles];
+const SUPABASE_NOT_CONFIGURED_ERROR = 'SUPABASE_DESCONECTADO: As variáveis VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não foram configuradas na Vercel. Cadastre-as em Settings > Environment Variables no painel da Vercel para permitir salvamento global entre computadores e celulares.';
 
 export const vehicleService = {
   /**
@@ -47,7 +46,7 @@ export const vehicleService = {
 
   async getVehicles(filters?: VehicleFilterState & { include_hidden?: boolean }): Promise<Vehicle[]> {
     if (!isSupabaseConfigured || !supabase) {
-      let filtered = [...unconfiguredMockVehicles];
+      let filtered = [...mockVehicles];
 
       if (!filters?.include_hidden && filters?.is_visible === undefined) {
         filtered = filtered.filter(v => v.is_visible !== false);
@@ -265,53 +264,11 @@ export const vehicleService = {
   },
 
   async createVehicle(vehicleData: Partial<Vehicle>, mediaUrls: string[] = [], featuresList: string[] = []): Promise<Vehicle> {
-    const generatedSlug = slugify(`${vehicleData.brand || ''} ${vehicleData.model || ''} ${vehicleData.version || ''} ${vehicleData.year || ''}-${Date.now().toString().slice(-4)}`);
-
     if (!isSupabaseConfigured || !supabase) {
-      const newVehicle: Vehicle = {
-        id: 'v-' + Date.now(),
-        slug: generatedSlug,
-        brand: vehicleData.brand || 'Marca',
-        model: vehicleData.model || 'Modelo',
-        version: vehicleData.version || 'Versão',
-        year: Number(vehicleData.year) || 2024,
-        model_year: Number(vehicleData.model_year) || 2024,
-        price: Number(vehicleData.price) || 0,
-        promotional_price: vehicleData.promotional_price ? Number(vehicleData.promotional_price) : null,
-        mileage: Number(vehicleData.mileage) || 0,
-        fuel: vehicleData.fuel || 'FLEX',
-        transmission: vehicleData.transmission || 'AUTOMATICO',
-        body_type: vehicleData.body_type || 'SUV',
-        color: vehicleData.color || 'Preto',
-        engine: vehicleData.engine || '2.0',
-        power: vehicleData.power || '150 cv',
-        traction: vehicleData.traction || 'Dianteira',
-        doors: Number(vehicleData.doors) || 4,
-        plate_end: vehicleData.plate_end || '0',
-        description: vehicleData.description || '',
-        status: vehicleData.status || 'DISPONIVEL',
-        featured: Boolean(vehicleData.featured),
-        is_offer: Boolean(vehicleData.is_offer),
-        is_visible: vehicleData.is_visible !== undefined ? Boolean(vehicleData.is_visible) : true,
-        video_url: vehicleData.video_url || null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        primary_image: mediaUrls[0] || '',
-        secondary_image: mediaUrls[1] || '',
-        features: featuresList,
-        media: mediaUrls.map((url, idx) => ({
-          id: `m-new-${idx}`,
-          vehicle_id: 'v-' + Date.now(),
-          type: 'image',
-          url,
-          is_primary: idx === 0,
-          sort_order: idx + 1,
-        })),
-      };
-
-      unconfiguredMockVehicles = [newVehicle, ...unconfiguredMockVehicles];
-      return newVehicle;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
+
+    const generatedSlug = slugify(`${vehicleData.brand || ''} ${vehicleData.model || ''} ${vehicleData.version || ''} ${vehicleData.year || ''}-${Date.now().toString().slice(-4)}`);
 
     // Supabase Insert
     const { data: created, error: vehicleErr } = await supabase
@@ -345,7 +302,10 @@ export const vehicleService = {
       .select()
       .single();
 
-    if (vehicleErr) throw vehicleErr;
+    if (vehicleErr) {
+      console.error('Erro no Supabase ao criar veículo:', vehicleErr);
+      throw new Error(`Erro no banco Supabase ao criar veículo: ${vehicleErr.message}`);
+    }
 
     // Insert Media into Supabase vehicle_media
     if (mediaUrls.length > 0) {
@@ -356,7 +316,10 @@ export const vehicleService = {
         is_primary: idx === 0,
         sort_order: idx + 1,
       }));
-      await supabase.from('vehicle_media').insert(mediaRecords);
+      const { error: mediaErr } = await supabase.from('vehicle_media').insert(mediaRecords);
+      if (mediaErr) {
+        console.error('Erro no Supabase ao salvar mídias:', mediaErr);
+      }
     }
 
     // Insert Features into Supabase vehicle_features
@@ -365,7 +328,10 @@ export const vehicleService = {
         vehicle_id: created.id,
         feature_name: name,
       }));
-      await supabase.from('vehicle_features').insert(featureRecords);
+      const { error: featErr } = await supabase.from('vehicle_features').insert(featureRecords);
+      if (featErr) {
+        console.error('Erro no Supabase ao salvar opcionais:', featErr);
+      }
     }
 
     return (await this.getVehicleById(created.id)) || created;
@@ -373,31 +339,7 @@ export const vehicleService = {
 
   async updateVehicle(id: string, vehicleData: Partial<Vehicle>, mediaUrls?: string[], featuresList?: string[]): Promise<Vehicle | null> {
     if (!isSupabaseConfigured || !supabase) {
-      const idx = unconfiguredMockVehicles.findIndex(v => v.id === id);
-      if (idx === -1) return null;
-
-      const existing = unconfiguredMockVehicles[idx];
-      const updated: Vehicle = {
-        ...existing,
-        ...vehicleData,
-        updated_at: new Date().toISOString(),
-        primary_image: mediaUrls?.[0] || existing.primary_image,
-        secondary_image: mediaUrls?.[1] || existing.secondary_image,
-        features: featuresList !== undefined ? featuresList : existing.features,
-        media: mediaUrls
-          ? mediaUrls.map((url, i) => ({
-              id: `m-up-${i}`,
-              vehicle_id: id,
-              type: 'image',
-              url,
-              is_primary: i === 0,
-              sort_order: i + 1,
-            }))
-          : existing.media,
-      };
-
-      unconfiguredMockVehicles[idx] = updated;
-      return updated;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     const { error: vErr } = await supabase
@@ -429,7 +371,10 @@ export const vehicleService = {
       })
       .eq('id', id);
 
-    if (vErr) throw vErr;
+    if (vErr) {
+      console.error('Erro no Supabase ao atualizar veículo:', vErr);
+      throw new Error(`Erro no banco Supabase ao atualizar veículo: ${vErr.message}`);
+    }
 
     if (mediaUrls) {
       await supabase.from('vehicle_media').delete().eq('vehicle_id', id);
@@ -461,69 +406,62 @@ export const vehicleService = {
 
   async updateStatus(id: string, status: VehicleStatus): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const v = unconfiguredMockVehicles.find(item => item.id === id);
-      if (v) {
-        v.status = status;
-        v.updated_at = new Date().toISOString();
-        return true;
-      }
-      return false;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     const { error } = await supabase.from('vehicles').update({ status }).eq('id', id);
-    return !error;
+    if (error) {
+      throw new Error(`Erro no Supabase ao atualizar status: ${error.message}`);
+    }
+    return true;
   },
 
   async toggleFeatured(id: string, featured: boolean): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const v = unconfiguredMockVehicles.find(item => item.id === id);
-      if (v) {
-        v.featured = featured;
-        return true;
-      }
-      return false;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     const { error } = await supabase.from('vehicles').update({ featured }).eq('id', id);
-    return !error;
+    if (error) {
+      throw new Error(`Erro no Supabase ao alterar destaque: ${error.message}`);
+    }
+    return true;
   },
 
   async toggleOffer(id: string, is_offer: boolean): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const v = unconfiguredMockVehicles.find(item => item.id === id);
-      if (v) {
-        v.is_offer = is_offer;
-        return true;
-      }
-      return false;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     const { error } = await supabase.from('vehicles').update({ is_offer }).eq('id', id);
-    return !error;
+    if (error) {
+      throw new Error(`Erro no Supabase ao alterar oferta: ${error.message}`);
+    }
+    return true;
   },
 
   async toggleVisibility(id: string, is_visible: boolean): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      const v = unconfiguredMockVehicles.find(item => item.id === id);
-      if (v) {
-        v.is_visible = is_visible;
-        return true;
-      }
-      return false;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     const { error } = await supabase.from('vehicles').update({ is_visible }).eq('id', id);
-    return !error;
+    if (error) {
+      throw new Error(`Erro no Supabase ao alterar visibilidade: ${error.message}`);
+    }
+    return true;
   },
 
   async deleteVehicle(id: string): Promise<boolean> {
     if (!isSupabaseConfigured || !supabase) {
-      unconfiguredMockVehicles = unconfiguredMockVehicles.filter(v => v.id !== id);
-      return true;
+      throw new Error(SUPABASE_NOT_CONFIGURED_ERROR);
     }
 
     const { error } = await supabase.from('vehicles').delete().eq('id', id);
-    return !error;
+    if (error) {
+      throw new Error(`Erro no Supabase ao excluir veículo: ${error.message}`);
+    }
+    return true;
   },
 
   async duplicateVehicle(id: string): Promise<Vehicle | null> {

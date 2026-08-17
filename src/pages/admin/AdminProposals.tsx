@@ -7,6 +7,7 @@ import {
 import type { Proposal, ProposalStatus } from '../../types';
 import { proposalService } from '../../services/proposalService';
 import { LoadingState, EmptyState } from '../../components/ConfirmDialog';
+import { SupabaseStatusBanner } from '../../components/admin/SupabaseStatusBanner';
 import { formatCurrency, cleanPhoneForWhatsApp } from '../../utils/formatters';
 import { useToast } from '../../hooks/useToast';
 
@@ -73,6 +74,7 @@ export const AdminProposals: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <SupabaseStatusBanner />
       
       {/* Header */}
       <div className="bg-[#0A0A0C] border border-[#1F1F24] p-6 rounded-3xl shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">

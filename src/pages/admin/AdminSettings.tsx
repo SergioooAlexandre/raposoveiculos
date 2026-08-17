@@ -6,6 +6,7 @@ import {
   Search
 } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
+import { SupabaseStatusBanner } from '../../components/admin/SupabaseStatusBanner';
 import { useToast } from '../../hooks/useToast';
 
 export const AdminSettings: React.FC = () => {
@@ -92,6 +93,7 @@ export const AdminSettings: React.FC = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto pb-12">
+      <SupabaseStatusBanner />
       
       {/* Header */}
       <div className="bg-[#0A0A0C] border border-[#1F1F24] p-6 rounded-3xl shadow-xl flex items-center justify-between gap-4">
